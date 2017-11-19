@@ -1,0 +1,109 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+	<title>Fitts's Law experiment</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(640, 640, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
+
+var text;
+var counter = 0;
+var c1, c2;
+var circles = [];
+
+function preload() {
+    game.load.image('circleA', 'assets/greencircle.png');
+    game.load.image('circleB', 'assets/redcircle.png');
+}
+
+function distributeFields() {
+    var radius = 100;
+    var width = 640, height = 640,
+        angle = 0, step = (2*Math.PI) / circles.length;
+    var i;
+    for (i=0; i<circles.length; i++) {
+        var x = Math.round(width/2 + radius * Math.cos(angle) - circles[i].width/2);
+        var y = Math.round(height/2 + radius * Math.sin(angle) -  circles[i].height/2)
+        if(window.console) {
+            console.log(circles[i].key, x, y);
+        }
+        circles[i].centerX = x;
+        circles[i].centerY = y;
+        angle += step;
+    };
+};
+
+function create() {
+    var i;
+    for (i=0; i<10; i++) {
+        c1 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
+        c1.inputEnabled = true;     
+        c1.events.onInputDown.add(listener, c1);
+        
+        circles.push(c1);
+    }
+    distributeFields();
+    
+    
+    
+    //  This creates a simple sprite that is using our loaded image and
+    //  displays it on-screen and assign it to a variable
+    c1 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
+
+    //  Moves the image anchor to the middle, so it centers inside the game properly
+    c1.centerX = 50;
+    c1.centerY = 50;
+
+    //  Enables all kind of input actions on this image (click, etc)
+    c1.inputEnabled = true;
+    
+    c1.events.onInputDown.add(listener, c1);
+    
+    c2 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
+    //  Moves the image anchor to the middle, so it centers inside the game properl
+    c2.anchor.set(0);
+    //  Enables all kind of input actions on this image (click, etc)
+    c2.inputEnabled = true;    
+    c2.events.onInputDown.add(listener, c2);
+
+
+    text = game.add.text(250, 16, '', { fill: '#ffffff' });
+}
+
+function render () {
+
+}
+
+function listener () {
+    counter++;
+    text.text = "You clicked " + this.name + " " + counter + " times!";
+    
+    if (this.key == 'circleA') {
+      this.loadTexture('circleB', 0);
+    } else {
+      this.loadTexture('circleA', 0);
+    }
+}
+
+
+function update() {
+//console.log('X:' + this.input.activePointer.x);
+
+//console.log('Y:' + this.input.activePointer.y);
+    
+}
+
+</script>
+
+</body>
+</html>
