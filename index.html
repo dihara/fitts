@@ -18,66 +18,68 @@ var game = new Phaser.Game(640, 640, Phaser.AUTO, '', { preload: preload, create
 
 var text;
 var counter = 0;
-var c1, c2;
 var circles = [];
+var startButton, restartButton;
+var distances = [100, 200, 300];
 
 function preload() {
+    game.load.spritesheet('button', 'assets/button_sprite_sheet.png', 193, 71);
     game.load.image('circleA', 'assets/greencircle.png');
     game.load.image('circleB', 'assets/redcircle.png');
 }
 
-function distributeFields() {
-    var radius = 100;
+/* Distribute whatever sprite objects are on circles[]
+following a circular pattern */
+function distributeCircles(radius) {
     var width = 640, height = 640,
         angle = 0, step = (2*Math.PI) / circles.length;
     var i;
     for (i=0; i<circles.length; i++) {
-        var x = Math.round(width/2 + radius * Math.cos(angle) - circles[i].width/2);
-        var y = Math.round(height/2 + radius * Math.sin(angle) -  circles[i].height/2)
+        var sendtox = Math.round(width/2 + radius * Math.cos(angle) - circles[i].width/2);
+        var sendtoy = Math.round(height/2 + radius * Math.sin(angle) -  circles[i].height/2)
         if(window.console) {
-            console.log(circles[i].key, x, y);
+            console.log(circles[i].key, sendtox, sendtoy);
         }
-        circles[i].centerX = x;
-        circles[i].centerY = y;
+        game.add.tween(circles[i]).to( { centerY: sendtoy, centerX: sendtox }, 0, Phaser.Easing.Bounce.Out, true);
         angle += step;
-    };
-};
+    }
+}
 
 function create() {
+    startButton = game.add.button(game.world.centerX - 95, 500, 'button', startButtonClick, this, 2, 1, 0);
+
+    //button.onInputOver.add(over, button);
+    //button.onInputOut.add(out, button);
+    //button.onInputUp.add(up, button);
+    
+    text = game.add.text(250, 16, '', { fill: '#ffffff' });
+}
+
+function startButtonClick() {
+    text.text = "Game start!!!";
+    
     var i;
     for (i=0; i<10; i++) {
-        c1 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
-        c1.inputEnabled = true;     
-        c1.events.onInputDown.add(listener, c1);
-        
-        circles.push(c1);
+        var newcircle = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
+        newcircle.inputEnabled = true;     
+        newcircle.events.onInputDown.add(listener, newcircle);
+        newcircle.centerX = game.world.randomX;
+        newcircle.centerY = game.world.randomY;
+        circles.push(newcircle);
+        //game.physics.enable([mycircle.sprite], Phaser.Physics.ARCADE);
     }
-    distributeFields();
+    distributeCircles(200);
     
     
+    startButton.kill();
     
-    //  This creates a simple sprite that is using our loaded image and
-    //  displays it on-screen and assign it to a variable
-    c1 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
+    restartButton = game.add.button(5, 5, 'button', restartButtonClick, this, 2, 1, 0);
+}
 
-    //  Moves the image anchor to the middle, so it centers inside the game properly
-    c1.centerX = 50;
-    c1.centerY = 50;
-
-    //  Enables all kind of input actions on this image (click, etc)
-    c1.inputEnabled = true;
-    
-    c1.events.onInputDown.add(listener, c1);
-    
-    c2 = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
-    //  Moves the image anchor to the middle, so it centers inside the game properl
-    c2.anchor.set(0);
-    //  Enables all kind of input actions on this image (click, etc)
-    c2.inputEnabled = true;    
-    c2.events.onInputDown.add(listener, c2);
-
-
-    text = game.add.text(250, 16, '', { fill: '#ffffff' });
+function restartButtonClick() {
+      distributeCircles(distances[Math.round(Math.random() * 2)]);
+      
+  
 }
 
 function render () {
@@ -86,7 +88,7 @@ function render () {
 
 function listener () {
     counter++;
-    text.text = "You clicked " + this.name + " " + counter + " times!";
+    text.text = "You clicked " + this.key + " " + counter + " times!";
     
     if (this.key == 'circleA') {
       this.loadTexture('circleB', 0);
@@ -97,10 +99,7 @@ function listener () {
 
 
 function update() {
-//console.log('X:' + this.input.activePointer.x);
 
-//console.log('Y:' + this.input.activePointer.y);
-    
 }
 
 </script>
