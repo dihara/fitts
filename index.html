@@ -20,12 +20,21 @@ var text;
 var counter = 0;
 var circles = [];
 var startButton, restartButton;
-var distances = [100, 200, 300];
+var distances       = [95, 180, 250, 95, 180, 250];
+var target_sizes    = [15,  30,  15, 30,  15,  30];
+var current_distance;
+var sfx;
+var starting_pair = true;
+var max_count = 20;
+
+//Time tracking variables
+var start_time, end_time;
 
 function preload() {
     game.load.spritesheet('button', 'assets/button_sprite_sheet.png', 193, 71);
-    game.load.image('circleA', 'assets/greencircle.png');
-    game.load.image('circleB', 'assets/redcircle.png');
+    game.load.image('circleA', 'assets/c50g.png');
+    game.load.image('circleB', 'assets/c50r.png');
+    game.load.audio('sfx', 'assets/p-ping.mp3');
 }
 
 /* Distribute whatever sprite objects are on circles[]
@@ -37,49 +46,77 @@ function distributeCircles(radius) {
     for (i=0; i<circles.length; i++) {
         var sendtox = Math.round(width/2 + radius * Math.cos(angle) - circles[i].width/2);
         var sendtoy = Math.round(height/2 + radius * Math.sin(angle) -  circles[i].height/2)
-        if(window.console) {
-            console.log(circles[i].key, sendtox, sendtoy);
-        }
+        console.log(circles[i].key, sendtox, sendtoy);
+
         game.add.tween(circles[i]).to( { centerY: sendtoy, centerX: sendtox }, 0, Phaser.Easing.Bounce.Out, true);
         angle += step;
     }
+    
+    current_distance = radius;
 }
 
 function create() {
+    game.stage.backgroundColor = '#ffffff';
+    
+    sfx = game.add.audio('sfx');
+
     startButton = game.add.button(game.world.centerX - 95, 500, 'button', startButtonClick, this, 2, 1, 0);
 
-    //button.onInputOver.add(over, button);
-    //button.onInputOut.add(out, button);
-    //button.onInputUp.add(up, button);
-    
-    text = game.add.text(250, 16, '', { fill: '#ffffff' });
+    text = game.add.text(10, 600, '', { fill: '#000000' });
 }
 
 function startButtonClick() {
-    text.text = "Game start!!!";
+    text.text = "The experiment begins!!!";
     
     var i;
-    for (i=0; i<10; i++) {
+    var initial_size = target_sizes.pop();
+    for (i=0; i<12; i++) {
         var newcircle = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
         newcircle.inputEnabled = true;     
         newcircle.events.onInputDown.add(listener, newcircle);
         newcircle.centerX = game.world.randomX;
         newcircle.centerY = game.world.randomY;
+        newcircle.width = initial_size;
+        newcircle.height = initial_size;
+        newcircle.name = i;
         circles.push(newcircle);
         //game.physics.enable([mycircle.sprite], Phaser.Physics.ARCADE);
     }
-    distributeCircles(200);
-    
+    distributeCircles(distances.pop());
     
     startButton.kill();
     
     restartButton = game.add.button(5, 5, 'button', restartButtonClick, this, 2, 1, 0);
+    
+    choosePair();
 }
 
 function restartButtonClick() {
-      distributeCircles(distances[Math.round(Math.random() * 2)]);
-      
-  
+    var i;
+
+    var next_size = target_sizes.pop();
+    for (i=0; i<circles.length; i++) { 
+        //circles[i].loadTexture(circleA, 0);
+        circles[i].width = next_size;
+        circles[i].height = next_size;
+    }
+    
+    /*
+    do {
+        i = Math.round(Math.random() * (distances.length - 1))
+    } 
+    while (distances[i] == current_distance);
+    console.log("new distance is: " + distances[i]);     */  
+    
+    var next_distance = distances.pop();
+    
+    distributeCircles(next_distance);
+}
+
+function choosePair() {
+    var i = Math.round(Math.random() * (circles.length - 1))
+    circles[i].loadTexture('circleB', 0);
+    starting_pair = true;
 }
 
 function render () {
@@ -87,13 +124,64 @@ function render () {
 }
 
 function listener () {
-    counter++;
-    text.text = "You clicked " + this.key + " " + counter + " times!";
-    
-    if (this.key == 'circleA') {
-      this.loadTexture('circleB', 0);
-    } else {
-      this.loadTexture('circleA', 0);
+    if (this.key == 'circleB') {
+        this.loadTexture('circleA', 0);
+        sfx.play();
+
+        if (!starting_pair) {
+            end_time = Date.now();
+            text.text = "You completed " + counter + "/20 pairs and " + (6 -target_sizes.length)  + "/6 sets! in " + (end_time - start_time) + " ms";
+            
+            counter++;
+            if (counter == max_count) {
+                restartButtonClick();
+                counter = 0;
+            } 
+            
+            choosePair();
+                
+        } else {
+            starting_pair = false;
+            switch (this.name) {
+                case 0: 
+                    circles[6].loadTexture('circleB', 0);
+                    break;
+                case 1: 
+                    circles[7].loadTexture('circleB', 0);
+                    break;
+                case 2: 
+                    circles[8].loadTexture('circleB', 0);
+                    break;
+                case 3: 
+                    circles[9].loadTexture('circleB', 0);
+                    break;
+                case 4: 
+                    circles[10].loadTexture('circleB', 0);
+                    break;
+                case 5: 
+                    circles[11].loadTexture('circleB', 0);
+                    break;
+                case 6: 
+                    circles[0].loadTexture('circleB', 0);
+                    break;
+                case 7: 
+                    circles[1].loadTexture('circleB', 0);
+                    break;
+                case 8: 
+                    circles[2].loadTexture('circleB', 0);
+                    break;
+                case 9: 
+                    circles[3].loadTexture('circleB', 0);
+                    break;
+                case 10: 
+                    circles[4].loadTexture('circleB', 0);
+                    break;            
+                case 11: 
+                    circles[5].loadTexture('circleB', 0);
+            }
+            
+            start_time = Date.now();
+        }
     }
 }
 
