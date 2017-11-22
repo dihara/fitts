@@ -2,7 +2,12 @@
 <html lang="en"> 
 <head> 
 	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
 	<title>Fitts's Law experiment</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/simple-sidebar.css" rel="stylesheet">	
 	<script type="text/javascript" src="js/phaser.min.js"></script>
     <style type="text/css">
         body {
@@ -10,28 +15,86 @@
         }
     </style>
 </head>
+
 <body>
+
+
+    <div id="wrapper" class="toggled">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand">
+                    <a href="#">
+                        Fitts's Law Experiment
+                    </a>
+                </li>
+                <li>
+                    <a href="#law">Fitt's Law</a>
+                </li>
+                <li>
+                    <a href="#theexperiment">The experiment</a>
+                </li>
+                <li>
+                    <a href="#about">About</a>
+                </li>
+            </ul>
+        </div>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+                <h1 id="law">Fitt's Law</h1>
+                <p>Fitts's law (often cited as Fitts' law) is a predictive model of human movement primarily used in human–computer interaction and ergonomics. This scientific law predicts that the time required to rapidly move to a target area is a function of the ratio between the distance to the target and the width of the target.</p>
+                
+                <h1 id="theexperiment">The Experiment</h1>
+                <p>This template has a responsive menu toggling system. The menu will appear collapsed on smaller screens, and will appear non-collapsed on larger screens. When toggled using the button below, the menu will appear/disappear. On small screens, the page content will be pushed off canvas.</p>
+                <p>Make sure to keep all page content within the <code>#page-content-wrapper</code>.</p>
+
+                <div id="experiment"></div>
+                
+                <a id="downloadA" href="#">Download CSV</a>
+                
+                
+
+                <h1 id="about">About</h1>
+                <p>This page was created as a homework for the CS 522 HCI at UIC on Fall 2017.</p>
+            </div>
+        </div>
+        <!-- /#page-content-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+
 
 <script type="text/javascript">
 
-var game = new Phaser.Game(640, 640, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
+var game = new Phaser.Game(640, 640, Phaser.AUTO, 'experiment', { preload: preload, create: create, update: update, render: render });
 
 var text;
 var counter = 0;
 var circles = [];
 var startButton, restartButton;
-var distances       = [95, 180, 250, 95, 180, 250];
-var target_sizes    = [15,  30,  15, 30,  15,  30];
-var current_distance;
+var distances       = [95,          180,            250,            95,             180,            250];
+var target_sizes    = [15,          30,             15,             30,             15,             30];
+var ID_values       = [2.874469118, 2.807354922,    4.142957954,    2.058893689,    3.700439718,    3.222392421];
+var set_sequence = [];
+var current_set_index; //a set would be a W, D pair
 var sfx;
-var starting_pair = true;
+var initial_target = true;
 var max_count = 20;
+
+
+var experimentData = [];
 
 //Time tracking variables
 var start_time, end_time;
 
 function preload() {
-    game.load.spritesheet('button', 'assets/button_sprite_sheet.png', 193, 71);
+    game.load.spritesheet('restart-button', 'assets/button_restart.png', 215, 40);
+    game.load.spritesheet('begin-button', 'assets/button_begin-experiment.png', 215, 40);
     game.load.image('circleA', 'assets/c50g.png');
     game.load.image('circleB', 'assets/c50r.png');
     game.load.audio('sfx', 'assets/p-ping.mp3');
@@ -60,128 +123,115 @@ function create() {
     
     sfx = game.add.audio('sfx');
 
-    startButton = game.add.button(game.world.centerX - 95, 500, 'button', startButtonClick, this, 2, 1, 0);
+    startButton = game.add.button(game.world.centerX - 95, 500, 'begin-button', startButtonClick, this);
 
     text = game.add.text(10, 600, '', { fill: '#000000' });
 }
 
 function startButtonClick() {
     text.text = "The experiment begins!!!";
-    
     var i;
-    var initial_size = target_sizes.pop();
-    for (i=0; i<12; i++) {
+    
+    //build a sequence of random values to choose sets of W and D
+    while (true) {
+        i = Math.round(Math.random() * 5);
+        if (set_sequence.indexOf(i) == -1) {
+            set_sequence.push(i);
+        }
+        if (set_sequence.length == 6) {
+            break;
+        }
+    };
+    
+    current_set_index = set_sequence.pop();
+    console.log("current_set_index", current_set_index);
+    
+    for (i=0; i<16; i++) {
         var newcircle = game.add.sprite(game.world.centerX, game.world.centerY, 'circleA');
         newcircle.inputEnabled = true;     
         newcircle.events.onInputDown.add(listener, newcircle);
         newcircle.centerX = game.world.randomX;
         newcircle.centerY = game.world.randomY;
-        newcircle.width = initial_size;
-        newcircle.height = initial_size;
+        newcircle.width = target_sizes[current_set_index];
+        newcircle.height = target_sizes[current_set_index];
         newcircle.name = i;
         circles.push(newcircle);
-        //game.physics.enable([mycircle.sprite], Phaser.Physics.ARCADE);
     }
-    distributeCircles(distances.pop());
+    distributeCircles(distances[current_set_index]);
     
     startButton.kill();
     
-    restartButton = game.add.button(5, 5, 'button', restartButtonClick, this, 2, 1, 0);
+    restartButton = game.add.button(5, 5, 'restart-button', gotoNextSet, this, 2, 1, 0);
     
     choosePair();
+    
+    element1 = document.getElementById("downloadA");
+    element1.addEventListener("click", downloadCSV);
 }
 
-function restartButtonClick() {
+function gotoNextSet() {
     var i;
 
-    var next_size = target_sizes.pop();
+    current_set_index = set_sequence.pop();
+
+    //var next_size = target_sizes.pop();
     for (i=0; i<circles.length; i++) { 
-        //circles[i].loadTexture(circleA, 0);
-        circles[i].width = next_size;
-        circles[i].height = next_size;
+        circles[i].width = target_sizes[current_set_index];
+        circles[i].height = target_sizes[current_set_index];
     }
     
-    /*
-    do {
-        i = Math.round(Math.random() * (distances.length - 1))
-    } 
-    while (distances[i] == current_distance);
-    console.log("new distance is: " + distances[i]);     */  
+    //var next_distance = distances.pop();
     
-    var next_distance = distances.pop();
-    
-    distributeCircles(next_distance);
+    distributeCircles(distances[current_set_index]);
 }
 
 function choosePair() {
     var i = Math.round(Math.random() * (circles.length - 1))
     circles[i].loadTexture('circleB', 0);
-    starting_pair = true;
+    initial_target = true;
 }
 
 function render () {
 
 }
 
+function save_data(MT){
+    var point = {};
+    point.Distance = distances[current_set_index];
+    point.Width = target_sizes[current_set_index];
+    point.ID = ID_values[current_set_index];
+    point.MT = MT;
+    
+    
+    experimentData.push(point);
+}
+
 function listener () {
+    var step;
     if (this.key == 'circleB') {
         this.loadTexture('circleA', 0);
         sfx.play();
 
-        if (!starting_pair) {
+        if (!initial_target) {
             end_time = Date.now();
-            text.text = "You completed " + counter + "/20 pairs and " + (6 -target_sizes.length)  + "/6 sets! in " + (end_time - start_time) + " ms";
-            
             counter++;
+            
+            text.text = "You completed " + counter + "/20 pairs and " + (6 -target_sizes.length)  + "/6 sets! in " + (end_time - start_time) + " ms";
             if (counter == max_count) {
-                restartButtonClick();
+                gotoNextSet();
                 counter = 0;
             } 
             
-            choosePair();
-                
-        } else {
-            starting_pair = false;
-            switch (this.name) {
-                case 0: 
-                    circles[6].loadTexture('circleB', 0);
-                    break;
-                case 1: 
-                    circles[7].loadTexture('circleB', 0);
-                    break;
-                case 2: 
-                    circles[8].loadTexture('circleB', 0);
-                    break;
-                case 3: 
-                    circles[9].loadTexture('circleB', 0);
-                    break;
-                case 4: 
-                    circles[10].loadTexture('circleB', 0);
-                    break;
-                case 5: 
-                    circles[11].loadTexture('circleB', 0);
-                    break;
-                case 6: 
-                    circles[0].loadTexture('circleB', 0);
-                    break;
-                case 7: 
-                    circles[1].loadTexture('circleB', 0);
-                    break;
-                case 8: 
-                    circles[2].loadTexture('circleB', 0);
-                    break;
-                case 9: 
-                    circles[3].loadTexture('circleB', 0);
-                    break;
-                case 10: 
-                    circles[4].loadTexture('circleB', 0);
-                    break;            
-                case 11: 
-                    circles[5].loadTexture('circleB', 0);
-            }
+            save_data(end_time - start_time);
             
+            step = 9;
+        } else {
+            step = 8;
             start_time = Date.now();
         }
+        
+        circles[(this.name + step) % 16].loadTexture('circleB', 0);
+        initial_target = !initial_target;
     }
 }
 
@@ -190,7 +240,60 @@ function update() {
 
 }
 
-</script>
+//based on https://appendto.com/2017/04/use-javascript-to-export-your-data-as-csv/
+function convertArrayOfObjectsToCSV(args) {
+var result, ctr, keys, columnDelimiter, lineDelimiter, data;
+ 
+data = args.data || null;
+if (data == null || !data.length) {
+return null;
+}
+ 
+columnDelimiter = args.columnDelimiter || ',';
+lineDelimiter = args.lineDelimiter || '\n';
+ 
+keys = Object.keys(data[0]);
+ 
+result = '';
+result += keys.join(columnDelimiter);
+result += lineDelimiter;
+ 
+data.forEach(function(item) {
+ctr = 0;
+keys.forEach(function(key) {
+if (ctr > 0) result += columnDelimiter;
+ 
+result += item[key];
+ctr++;
+});
+result += lineDelimiter;
+});
+ 
+return result;
+}
 
+
+function downloadCSV(args) {
+var data, filename, link;
+var csv = convertArrayOfObjectsToCSV({
+data: experimentData
+});
+if (csv == null) return;
+ 
+filename = args.filename || 'export.csv';
+ 
+if (!csv.match(/^data:text\/csv/i)) {
+csv = 'data:text/csv;charset=utf-8,' + csv;
+}
+data = encodeURI(csv);
+ 
+link = document.createElement('a');
+link.setAttribute('href', data);
+link.setAttribute('download', filename);
+link.click();
+}
+
+
+</script>
 </body>
 </html>
